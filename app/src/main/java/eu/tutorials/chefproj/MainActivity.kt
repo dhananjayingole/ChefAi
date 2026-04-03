@@ -30,6 +30,7 @@ import eu.tutorials.chefproj.ui.screens.RecipesScreen
 class MainActivity : ComponentActivity() {
     private val userId = "android_user_001"
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

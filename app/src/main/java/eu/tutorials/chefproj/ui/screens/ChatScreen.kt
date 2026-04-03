@@ -1,6 +1,5 @@
 package eu.tutorials.chefproj.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +28,9 @@ import eu.tutorials.chefproj.ui.viewmodels.ChatViewModel
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 private val QUICK_SUGGESTIONS = listOf(
     "🍛 Quick dinner ideas",
     "🥗 High protein meals",
@@ -47,6 +49,9 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var isVoiceProcessing by remember { mutableStateOf(false) }
+    var isVoiceListening by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Show save success snackbar
     LaunchedEffect(uiState.saveSuccessMessage) {
@@ -117,7 +122,15 @@ fun ChatScreen(
                             }
                         }
 
-                        if (uiState.isLoading) {
+                        // Show voice typing indicator when listening
+                        if (isVoiceListening) {
+                            item {
+                                VoiceTypingIndicator()
+                            }
+                        }
+
+                        // Show regular typing indicator when AI is thinking
+                        if (uiState.isLoading && !isVoiceListening) {
                             item { TypingIndicator() }
                         }
                     }
@@ -154,7 +167,8 @@ fun ChatScreen(
                 }
             }
 
-            ChatInputBar(
+            // Chat input bar with voice and text input
+            ChatInputBarWithVoice(
                 text = inputText,
                 onTextChange = { inputText = it },
                 onSend = {
@@ -163,8 +177,112 @@ fun ChatScreen(
                         inputText = ""
                     }
                 },
-                enabled = !uiState.isLoading
+                onVoiceResult = { voiceText ->
+                    scope.launch {
+                        isVoiceProcessing = true
+                        // Add the voice text to input field
+                        inputText = voiceText
+                        // Show confirmation
+                        snackbarHostState.showSnackbar("🎤 Voice input: \"$voiceText\"")
+                        delay(500)
+                        isVoiceProcessing = false
+                        // Optional: Auto-send after voice input (uncomment if desired)
+                        // if (inputText.isNotBlank()) {
+                        //     viewModel.sendMessage(inputText)
+                        //     inputText = ""
+                        // }
+                    }
+                },
+                onVoiceListeningState = { listening ->
+                    isVoiceListening = listening
+                },
+                enabled = !uiState.isLoading && !isVoiceProcessing
             )
+        }
+    }
+}
+
+// Composable with both voice and text input
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatInputBarWithVoice(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onSend: () -> Unit,
+    onVoiceResult: (String) -> Unit,
+    onVoiceListeningState: (Boolean) -> Unit,
+    enabled: Boolean
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Text input field
+            OutlinedTextField(
+                value = text,
+                onValueChange = onTextChange,
+                modifier = Modifier.weight(1f),
+                placeholder = {
+                    Text(
+                        text = if (enabled) "Ask your chef anything or tap the mic..." else "Processing...",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                },
+                enabled = enabled,
+                maxLines = 4,
+                shape = RoundedCornerShape(20.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = ChefOrange,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+            )
+
+            // Voice input button
+            VoiceInputButton(
+                onVoiceResult = onVoiceResult,
+                onListeningState = onVoiceListeningState,
+                enabled = enabled,
+                modifier = Modifier.size(52.dp)
+            )
+
+            // Send button
+            val canSend = enabled && text.isNotBlank()
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (canSend)
+                            Brush.linearGradient(listOf(ChefOrange, ChefOrangeLight))
+                        else
+                            Brush.linearGradient(listOf(MaterialTheme.colorScheme.outline, MaterialTheme.colorScheme.outline))
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                IconButton(
+                    onClick = onSend,
+                    enabled = canSend,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = "Send",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -368,49 +486,6 @@ private fun ChatWelcomeState(onSuggestionClick: (String) -> Unit) {
                 colors = SuggestionChipDefaults.suggestionChipColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 border = SuggestionChipDefaults.suggestionChipBorder(enabled = true, borderColor = MaterialTheme.colorScheme.outline)
             )
-        }
-    }
-}
-
-// ── Input bar ─────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ChatInputBar(text: String, onTextChange: (String) -> Unit, onSend: () -> Unit, enabled: Boolean) {
-    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = onTextChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Ask your chef anything...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
-                enabled = enabled,
-                maxLines = 4,
-                shape = RoundedCornerShape(20.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = ChefOrange,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                )
-            )
-            val canSend = enabled && text.isNotBlank()
-            Box(
-                modifier = Modifier.size(52.dp).clip(CircleShape)
-                    .background(if (canSend) Brush.linearGradient(listOf(ChefOrange, ChefOrangeLight)) else Brush.linearGradient(listOf(MaterialTheme.colorScheme.outline, MaterialTheme.colorScheme.outline))),
-                contentAlignment = Alignment.Center
-            ) {
-                IconButton(onClick = onSend, enabled = canSend, modifier = Modifier.fillMaxSize()) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White, modifier = Modifier.size(22.dp))
-                }
-            }
         }
     }
 }
