@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantryScreen(
-    viewModel: PantryViewModel = viewModel(factory = PantryViewModelFactory())
+    userId: String,
+    viewModel: PantryViewModel = viewModel(factory = PantryViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }

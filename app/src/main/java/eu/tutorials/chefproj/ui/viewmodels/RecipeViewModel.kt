@@ -8,11 +8,13 @@ import eu.tutorials.chefproj.Data.api.HealthAdviceResponse
 import eu.tutorials.chefproj.Data.api.MealPlanSaveRequest
 import eu.tutorials.chefproj.Data.api.NutritionData
 import eu.tutorials.chefproj.Data.api.RecipeGenerationRequest
+import eu.tutorials.chefproj.Data.api.RecipeRatingRequest
 import eu.tutorials.chefproj.Data.repository.NutriBotRepository
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.*
 
 data class RecipeUiState(
     val recipe: String? = null,
@@ -96,7 +98,8 @@ class RecipeViewModel(
         _uiState.update { it.copy(isRating = true) }
         viewModelScope.launch {
             val result = repository.rateRecipe(
-                eu.tutorials.chefproj.Data.api.RecipeRatingRequest(
+                userId = userId ?: "",
+                request = RecipeRatingRequest(
                     recipeName = recipeName,
                     rating = rating,
                     feedback = feedback
@@ -132,7 +135,7 @@ class RecipeViewModel(
                 fatG       = ns?.fatG ?: 0f,
                 notes      = "Saved from Recipes"
             )
-            val result = repository.saveMealPlan(request)
+            val result = repository.saveMealPlan(userId = userId ?: "", request = request)
             result.fold(
                 onSuccess = {
                     _uiState.update { it.copy(successMessage = "✅ Saved as $mealType for $planDate!") }
@@ -147,7 +150,11 @@ class RecipeViewModel(
     fun generateShoppingList(recipeText: String) {
         _uiState.update { it.copy(isGeneratingShoppingList = true) }
         viewModelScope.launch {
-            repository.generateShoppingList("Generate shopping list for this recipe", userId).collect { result ->
+            // Fix: Pass the recipe text as query parameter
+            repository.generateShoppingList(
+                query = recipeText,
+                userId = userId
+            ).collect { result ->
                 result.fold(
                     onSuccess = { list ->
                         _uiState.update { it.copy(shoppingList = list, isGeneratingShoppingList = false) }
@@ -163,7 +170,10 @@ class RecipeViewModel(
     fun getHealthAdvice(query: String) {
         _uiState.update { it.copy(isGettingHealthAdvice = true) }
         viewModelScope.launch {
-            repository.getHealthAdvice(query, userId).collect { result ->
+            repository.getHealthAdvice(
+                query = query,
+                userId = userId
+            ).collect { result ->
                 result.fold(
                     onSuccess = { advice ->
                         _uiState.update { it.copy(healthAdvice = advice, isGettingHealthAdvice = false) }
@@ -179,7 +189,10 @@ class RecipeViewModel(
     fun generateWeeklyPlan(query: String) {
         _uiState.update { it.copy(isGeneratingWeeklyPlan = true) }
         viewModelScope.launch {
-            repository.generateWeeklyPlan(query, userId).collect { result ->
+            repository.generateWeeklyPlan(
+                query = query,
+                userId = userId
+            ).collect { result ->
                 result.fold(
                     onSuccess = { plan ->
                         _uiState.update { it.copy(weeklyPlan = plan, isGeneratingWeeklyPlan = false) }
@@ -205,9 +218,14 @@ class RecipeViewModel(
                         timerSeconds = extractTimer(instruction)
                     ))
                 }
-                _uiState.update { it.copy(cookingSteps = steps, currentStep = 0, isCookingMode = true) }
+                if (steps.isNotEmpty()) {
+                    _uiState.update { it.copy(cookingSteps = steps, currentStep = 0, isCookingMode = true) }
+                } else {
+                    // Fallback: Use the API-based parser
+                    parseAndStartCookingSteps(recipeText)
+                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to parse recipe steps") }
+                _uiState.update { it.copy(error = "Failed to parse recipe steps: ${e.message}") }
             }
         }
     }
@@ -219,16 +237,16 @@ class RecipeViewModel(
                     onSuccess = { steps ->
                         val uiSteps = steps.mapIndexed { index, step ->
                             CookingStepUi(
-                                stepNumber = index + 1,
+                                stepNumber = step.step,
                                 instruction = step.instruction,
                                 timerSeconds = step.timerSeconds,
-                                isCompleted = false
+                                isCompleted = step.completed
                             )
                         }
                         _uiState.update { it.copy(cookingSteps = uiSteps, currentStep = 0, isCookingMode = true) }
                     },
                     onFailure = { error ->
-                        _uiState.update { it.copy(error = error.message) }
+                        _uiState.update { it.copy(error = "Failed to parse steps: ${error.message}") }
                     }
                 )
             }
@@ -236,16 +254,29 @@ class RecipeViewModel(
     }
 
     private fun extractTimer(instruction: String): Int {
-        val match = Regex("(\\d+)\\s*(?:min|minute|minutes)").find(instruction.lowercase())
-        return match?.groupValues?.get(1)?.toIntOrNull()?.times(60) ?: 0
+        // Check for minutes
+        val minMatch = Regex("(\\d+)\\s*(?:min|minute|minutes)").find(instruction.lowercase())
+        if (minMatch != null) {
+            return minMatch.groupValues[1].toIntOrNull()?.times(60) ?: 0
+        }
+
+        // Check for seconds
+        val secMatch = Regex("(\\d+)\\s*(?:sec|second|seconds)").find(instruction.lowercase())
+        if (secMatch != null) {
+            return secMatch.groupValues[1].toIntOrNull() ?: 0
+        }
+
+        return 0
     }
 
     fun nextStep() {
         _uiState.update { state ->
-            if (state.currentStep < state.cookingSteps.size - 1)
+            if (state.currentStep < state.cookingSteps.size - 1) {
                 state.copy(currentStep = state.currentStep + 1)
-            else
-                state.copy(isCookingMode = false)
+            } else {
+                // Complete cooking mode when reaching the last step
+                state.copy(isCookingMode = false, successMessage = "🎉 Cooking complete! Enjoy your meal!")
+            }
         }
     }
 
@@ -260,6 +291,21 @@ class RecipeViewModel(
         _uiState.update { it.copy(isCookingMode = false, cookingSteps = emptyList(), currentStep = 0) }
     }
 
-    fun clearError() { _uiState.update { it.copy(error = null) } }
-    fun clearSuccess() { _uiState.update { it.copy(successMessage = null) } }
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
+    fun clearSuccess() {
+        _uiState.update { it.copy(successMessage = null) }
+    }
+}
+
+class RecipeViewModelFactory(private val userId: String) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return RecipeViewModel(
+            repository = NutriBotRepository(),
+            userId = userId
+        ) as T
+    }
 }

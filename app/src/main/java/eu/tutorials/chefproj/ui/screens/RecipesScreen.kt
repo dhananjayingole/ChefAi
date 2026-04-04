@@ -1,14 +1,10 @@
 package eu.tutorials.chefproj.ui.screens
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,12 +21,13 @@ import eu.tutorials.chefproj.ui.components.*
 import eu.tutorials.chefproj.ui.theme.*
 import eu.tutorials.chefproj.ui.viewmodels.RecipeViewModel
 import eu.tutorials.chefproj.ui.viewmodels.CookingStepUi
+import eu.tutorials.chefproj.ui.viewmodels.RecipeViewModelFactory
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(
-    userId: String? = null,
+    userId: String,
     viewModel: RecipeViewModel = viewModel(factory = RecipeViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -64,7 +61,6 @@ fun RecipesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // ── Header ────────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,7 +98,6 @@ fun RecipesScreen(
                 }
             }
 
-            // ── Content ───────────────────────────────────────────────
             if (uiState.isLoading) {
                 LoadingIndicator(
                     modifier = Modifier.fillMaxSize(),
@@ -130,7 +125,6 @@ fun RecipesScreen(
                         item { EcoCard(eco = uiState.ecoScore) }
                     }
 
-                    // ── Action buttons ────────────────────────────────
                     item {
                         RecipeActionButtons(
                             onStartCooking = {
@@ -146,7 +140,6 @@ fun RecipesScreen(
             }
         }
 
-        // ── Rating dialog ─────────────────────────────────────────────
         if (showRatingDialog && uiState.recipe != null) {
             RatingDialog(
                 ratingValue = ratingValue,
@@ -164,7 +157,6 @@ fun RecipesScreen(
             )
         }
 
-        // ── Save meal plan dialog ─────────────────────────────────────
         if (showSaveMealDialog && uiState.recipe != null) {
             SaveMealDialog(
                 recipeName = extractRecipeName(uiState.recipe ?: ""),
@@ -182,7 +174,6 @@ fun RecipesScreen(
             )
         }
 
-        // ── Cooking mode overlay ──────────────────────────────────────
         if (uiState.isCookingMode && uiState.cookingSteps.isNotEmpty()) {
             CookingModeScreen(
                 steps = uiState.cookingSteps,
@@ -194,6 +185,9 @@ fun RecipesScreen(
         }
     }
 }
+
+// Keep all the existing composable functions (SaveMealDialog, RecipeSearchBar, etc.)
+// They remain unchanged except for fixing imports
 
 // ── Save Meal Dialog ─────────────────────────────────────────────────────────
 
@@ -770,12 +764,3 @@ private fun extractRecipeName(recipe: String): String {
     return pattern.find(recipe)?.groupValues?.get(1)?.trim() ?: "Recipe"
 }
 
-class RecipeViewModelFactory(private val userId: String?) : androidx.lifecycle.ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return RecipeViewModel(
-            repository = eu.tutorials.chefproj.Data.repository.NutriBotRepository(),
-            userId = userId
-        ) as T
-    }
-}

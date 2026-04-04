@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -78,4 +80,17 @@ dependencies {
 
     // Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.35.0-alpha")
+
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
+
+    // Firebase Firestore (for storing user data)
+    implementation("com.google.firebase:firebase-firestore-ktx:24.10.1")
+
+    // Google Sign-In (optional)
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // Firebase UI (for ready-made auth screens)
+    implementation("com.firebaseui:firebase-ui-auth:8.0.2")
+
 }

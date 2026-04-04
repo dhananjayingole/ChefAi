@@ -1,5 +1,7 @@
 package eu.tutorials.chefproj.ui.screens
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +30,7 @@ import eu.tutorials.chefproj.ui.viewmodels.ChatViewModel
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import eu.tutorials.chefproj.ui.viewmodels.ChatViewModelFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -39,10 +42,11 @@ private val QUICK_SUGGESTIONS = listOf(
     "🏋️ Muscle building meals"
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    userId: String? = null,
+    userId: String,
     viewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -487,15 +491,5 @@ private fun ChatWelcomeState(onSuggestionClick: (String) -> Unit) {
                 border = SuggestionChipDefaults.suggestionChipBorder(enabled = true, borderColor = MaterialTheme.colorScheme.outline)
             )
         }
-    }
-}
-
-class ChatViewModelFactory(private val userId: String?) : androidx.lifecycle.ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return ChatViewModel(
-            repository = eu.tutorials.chefproj.Data.repository.NutriBotRepository(),
-            userId = userId
-        ) as T
     }
 }

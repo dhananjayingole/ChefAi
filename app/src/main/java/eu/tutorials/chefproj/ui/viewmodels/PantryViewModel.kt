@@ -18,7 +18,8 @@ data class PantryUiState(
 )
 
 class PantryViewModel(
-    private val repository: NutriBotRepository
+    private val repository: NutriBotRepository,
+    private val userId: String
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PantryUiState())
@@ -30,26 +31,15 @@ class PantryViewModel(
     }
 
     fun loadPantry() {
-        _uiState.update { state -> state.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            repository.getPantry().collect { result ->
+            repository.getPantry(userId).collect { result ->
                 result.fold(
                     onSuccess = { items ->
-                        _uiState.update { state ->
-                            state.copy(
-                                items = items,
-                                isLoading = false,
-                                error = null
-                            )
-                        }
+                        _uiState.update { it.copy(items = items, isLoading = false, error = null) }
                     },
-                    onFailure = { error ->
-                        _uiState.update { state ->
-                            state.copy(
-                                isLoading = false,
-                                error = error.message
-                            )
-                        }
+                    onFailure = { err ->
+                        _uiState.update { it.copy(isLoading = false, error = err.message) }
                     }
                 )
             }
@@ -58,14 +48,10 @@ class PantryViewModel(
 
     fun loadExpiringItems(days: Int = 3) {
         viewModelScope.launch {
-            repository.getExpiringItems(days).collect { result ->
+            repository.getExpiringItems(userId, days).collect { result ->
                 result.fold(
-                    onSuccess = { items ->
-                        _uiState.update { state ->
-                            state.copy(expiringItems = items)
-                        }
-                    },
-                    onFailure = { /* Handle error silently */ }
+                    onSuccess = { items -> _uiState.update { it.copy(expiringItems = items) } },
+                    onFailure = { /* silent */ }
                 )
             }
         }
@@ -73,77 +59,49 @@ class PantryViewModel(
 
     fun addItem(itemName: String, quantity: Float, unit: String, category: String? = null) {
         if (itemName.isBlank()) return
-
-        _uiState.update { state -> state.copy(isAdding = true) }
+        _uiState.update { it.copy(isAdding = true) }
         viewModelScope.launch {
             val request = GroceryItemAddRequest(
-                itemName = itemName.lowercase(),
-                quantity = quantity,
-                unit = unit,
-                category = category,
+                itemName     = itemName.lowercase(),
+                quantity     = quantity,
+                unit         = unit,
+                category     = category,
                 isPerishable = category in listOf("vegetables", "fruits", "dairy", "proteins")
             )
-
-            val result = repository.addGrocery(request)
-            result.fold(
+            repository.addGrocery(userId, request).fold(
                 onSuccess = {
-                    _uiState.update { state ->
-                        state.copy(
-                            isAdding = false,
-                            successMessage = "Added $quantity $unit $itemName"
-                        )
-                    }
-                    loadPantry()
-                    loadExpiringItems()
+                    _uiState.update { it.copy(isAdding = false, successMessage = "Added $quantity $unit $itemName") }
+                    loadPantry(); loadExpiringItems()
                 },
-                onFailure = { error ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isAdding = false,
-                            error = error.message
-                        )
-                    }
-                }
+                onFailure = { err -> _uiState.update { it.copy(isAdding = false, error = err.message) } }
             )
         }
     }
 
     fun removeItem(itemName: String) {
         viewModelScope.launch {
-            val result = repository.removeGrocery(itemName)
-            result.fold(
-                onSuccess = {
-                    loadPantry()
-                    loadExpiringItems()
-                },
-                onFailure = { error ->
-                    _uiState.update { state -> state.copy(error = error.message) }
-                }
+            repository.removeGrocery(userId, itemName).fold(
+                onSuccess = { loadPantry(); loadExpiringItems() },
+                onFailure = { err -> _uiState.update { it.copy(error = err.message) } }
             )
         }
     }
 
     fun clearPantry() {
         viewModelScope.launch {
-            val result = repository.clearPantry()
-            result.fold(
-                onSuccess = {
-                    loadPantry()
-                    loadExpiringItems()
-                },
-                onFailure = { error ->
-                    _uiState.update { state -> state.copy(error = error.message) }
-                }
+            repository.clearPantry(userId).fold(
+                onSuccess = { loadPantry(); loadExpiringItems() },
+                onFailure = { err -> _uiState.update { it.copy(error = err.message) } }
             )
         }
     }
 
-    fun clearMessages() {
-        _uiState.update { state ->
-            state.copy(
-                error = null,
-                successMessage = null
-            )
-        }
+    fun clearMessages() { _uiState.update { it.copy(error = null, successMessage = null) } }
+}
+
+class PantryViewModelFactory(private val userId: String) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return PantryViewModel(NutriBotRepository(), userId) as T
     }
 }

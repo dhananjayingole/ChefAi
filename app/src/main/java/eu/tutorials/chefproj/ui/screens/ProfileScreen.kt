@@ -1,6 +1,5 @@
 package eu.tutorials.chefproj.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,12 +21,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.tutorials.chefproj.ui.components.LoadingIndicator
 import eu.tutorials.chefproj.ui.theme.*
 import eu.tutorials.chefproj.ui.viewmodels.ProfileViewModel
+import eu.tutorials.chefproj.ui.viewmodels.ProfileViewModelFactory
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    userId: String = "default_user",
+    userId: String,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -45,7 +44,7 @@ fun ProfileScreen(
         uiState.profile?.let {
             dietType = it.dietType ?: ""
             fitnessGoal = it.fitnessGoal ?: ""
-            calorieGoal = it.calorieGoal.toString()
+            calorieGoal = it.calorieGoal?.toString() ?: "500"
             skillLevel = it.skillLevel ?: ""
         }
     }
@@ -76,7 +75,6 @@ fun ProfileScreen(
                     .padding(paddingValues),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                // Hero / avatar section
                 item {
                     ProfileHeroSection(
                         profile = uiState.profile,
@@ -87,7 +85,6 @@ fun ProfileScreen(
                     )
                 }
 
-                // Preferences card
                 item {
                     PreferencesCard(
                         profile = uiState.profile,
@@ -114,7 +111,6 @@ fun ProfileScreen(
                     )
                 }
 
-                // Stats card
                 if (uiState.feedbackStats != null) {
                     item {
                         FeedbackStatsCard(
@@ -124,8 +120,7 @@ fun ProfileScreen(
                     }
                 }
 
-                // Best value protein card
-                if (uiState.cheapestProtein != null) {
+                if (uiState.cheapestProtein != null && uiState.cheapestProtein!!.isNotEmpty()) {
                     item {
                         BestValueProteinCard(
                             protein = uiState.cheapestProtein!!,
@@ -557,15 +552,5 @@ fun StatMetric(value: String, label: String, suffix: String = "") {
             color = MaterialTheme.colorScheme.primary
         )
         Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-class ProfileViewModelFactory(private val userId: String) : androidx.lifecycle.ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        @Suppress("UNCHECKED_CAST")
-        return ProfileViewModel(
-            repository = eu.tutorials.chefproj.Data.repository.NutriBotRepository(),
-            userId = userId
-        ) as T
     }
 }

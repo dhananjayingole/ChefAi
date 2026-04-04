@@ -38,7 +38,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NutritionScreen(
-    viewModel: NutritionViewModel = viewModel(factory = NutritionViewModelFactory())
+    userId: String,
+    viewModel: NutritionViewModel = viewModel(factory = NutritionViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

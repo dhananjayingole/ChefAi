@@ -6,18 +6,18 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // System
+    // ── System ────────────────────────────────────────────────────────────────
     @GET("/")
     suspend fun root(): Response<APIResponse>
 
     @GET("/health")
     suspend fun healthCheck(): Response<Map<String, String>>
 
-    // Chat
+    // ── Chat ──────────────────────────────────────────────────────────────────
     @POST("/chat")
     suspend fun chat(@Body request: ChatRequest): Response<APIResponse>
 
-    // Profile
+    // ── Profile ───────────────────────────────────────────────────────────────
     @GET("/profile/{user_id}")
     suspend fun getProfile(@Path("user_id") userId: String): Response<APIResponse>
 
@@ -30,107 +30,130 @@ interface ApiService {
     @DELETE("/profile/{user_id}")
     suspend fun resetProfile(@Path("user_id") userId: String): Response<APIResponse>
 
-    // Pantry
+    // ── Pantry  (user_id as query param so GET/DELETE can carry it) ───────────
     @GET("/pantry")
-    suspend fun getPantry(): Response<APIResponse>
+    suspend fun getPantry(@Query("user_id") userId: String): Response<APIResponse>
 
     @POST("/pantry")
-    suspend fun addGrocery(@Body item: GroceryItemAddRequest): Response<APIResponse>
+    suspend fun addGrocery(
+        @Query("user_id") userId: String,
+        @Body item: GroceryItemAddRequest
+    ): Response<APIResponse>
 
     @DELETE("/pantry")
-    suspend fun removeGrocery(@Body item: GroceryItemRemoveRequest): Response<APIResponse>
+    suspend fun removeGrocery(
+        @Query("user_id") userId: String,
+        @Body item: GroceryItemRemoveRequest
+    ): Response<APIResponse>
 
     @DELETE("/pantry/all")
-    suspend fun clearPantry(): Response<APIResponse>
+    suspend fun clearPantry(@Query("user_id") userId: String): Response<APIResponse>
 
     @GET("/pantry/expiring")
-    suspend fun getExpiringItems(@Query("days") days: Int = 3): Response<APIResponse>
+    suspend fun getExpiringItems(
+        @Query("user_id") userId: String,
+        @Query("days") days: Int = 3
+    ): Response<APIResponse>
 
-    // Recipes
+    // ── Recipes ───────────────────────────────────────────────────────────────
     @POST("/recipe/generate")
     suspend fun generateRecipe(@Body request: RecipeGenerationRequest): Response<APIResponse>
 
     @POST("/recipe/rate")
-    suspend fun rateRecipe(@Body request: RecipeRatingRequest): Response<APIResponse>
+    suspend fun rateRecipe(
+        @Query("user_id") userId: String,
+        @Body request: RecipeRatingRequest
+    ): Response<APIResponse>
 
-    // Meal Plans
+    // ── Meal Plans ────────────────────────────────────────────────────────────
     @GET("/mealplan")
-    suspend fun getMealPlans(@Query("days") days: Int = 7): Response<APIResponse>
+    suspend fun getMealPlans(
+        @Query("user_id") userId: String,
+        @Query("days") days: Int = 7
+    ): Response<APIResponse>
 
     @GET("/mealplan/today")
-    suspend fun getTodayMealPlans(): Response<APIResponse>
+    suspend fun getTodayMealPlans(@Query("user_id") userId: String): Response<APIResponse>
 
     @POST("/mealplan")
-    suspend fun saveMealPlan(@Body request: MealPlanSaveRequest): Response<APIResponse>
+    suspend fun saveMealPlan(
+        @Query("user_id") userId: String?,
+        @Body request: MealPlanSaveRequest
+    ): Response<APIResponse>
 
     @POST("/mealplan/week")
     suspend fun generateWeeklyPlan(@Body request: WeeklyPlanRequest): Response<APIResponse>
 
-    // Nutrition
+    // ── Nutrition ─────────────────────────────────────────────────────────────
     @GET("/nutrition/today")
-    suspend fun getTodayNutrition(): Response<APIResponse>
+    suspend fun getTodayNutrition(@Query("user_id") userId: String): Response<APIResponse>
 
     @GET("/nutrition/week")
-    suspend fun getWeeklyNutrition(): Response<APIResponse>
+    suspend fun getWeeklyNutrition(@Query("user_id") userId: String): Response<APIResponse>
 
-    // Budget
+    // ── Budget ────────────────────────────────────────────────────────────────
     @GET("/budget/cheapest-protein")
-    suspend fun getCheapestProtein(@Query("diet_type") dietType: String = "vegetarian"): Response<APIResponse>
+    suspend fun getCheapestProtein(
+        @Query("user_id") userId: String,
+        @Query("diet_type") dietType: String = "vegetarian"
+    ): Response<APIResponse>
 
     @GET("/budget/prices")
-    suspend fun getAllPrices(): Response<APIResponse>
+    suspend fun getAllPrices(@Query("user_id") userId: String): Response<APIResponse>
 
     @GET("/budget/price/{ingredient}")
     suspend fun getIngredientPrice(
         @Path("ingredient") ingredient: String,
+        @Query("user_id") userId: String,
         @Query("quantity_kg") quantityKg: Float = 1f
     ): Response<APIResponse>
 
-    @POST("/budget/price")
-    suspend fun updateIngredientPrice(
-        @Query("ingredient") ingredient: String,
-        @Query("price") price: Float,
-        @Query("source") source: String = "android"
-    ): Response<APIResponse>
-
-    // Vision
+    // ── Vision ────────────────────────────────────────────────────────────────
     @Multipart
     @POST("/vision/analyze")
     suspend fun analyzeImage(
-        @Part("file") file: MultipartBody.Part,
-        @Part("context") context: String = "fridge"
+        @Part file: MultipartBody.Part,
+        @Part("context") context: okhttp3.RequestBody,
+        @Part("user_id") userId: okhttp3.RequestBody
     ): Response<APIResponse>
 
-    // Voice
+    // ── Voice ─────────────────────────────────────────────────────────────────
     @Multipart
     @POST("/voice/transcribe")
-    suspend fun transcribeAudio(
-        @Part("file") file: MultipartBody.Part
-    ): Response<APIResponse>
+    suspend fun transcribeAudio(@Part file: MultipartBody.Part): Response<APIResponse>
 
-    // Shopping
+    // ── Shopping ──────────────────────────────────────────────────────────────
     @POST("/shopping/generate")
     suspend fun generateShoppingList(@Body request: ShoppingListRequest): Response<APIResponse>
 
-    // Cooking
+    // ── Cooking ───────────────────────────────────────────────────────────────
     @POST("/cooking/parse")
     suspend fun parseRecipeSteps(@Body request: ParseStepsRequest): Response<APIResponse>
 
-    // Eco
+    // ── Eco ───────────────────────────────────────────────────────────────────
     @POST("/eco/calculate")
-    suspend fun calculateEcoScore(@Body request: EcoScoreRequest): Response<APIResponse>
+    suspend fun calculateEcoScore(
+        @Query("user_id") userId: String,
+        @Body request: EcoScoreRequest
+    ): Response<APIResponse>
 
-    // Health
+    // ── Health ────────────────────────────────────────────────────────────────
     @POST("/health/advice")
     suspend fun getHealthAdvice(@Body request: HealthAdviceRequest): Response<APIResponse>
 
-    // Feedback
+    // ── Feedback ──────────────────────────────────────────────────────────────
     @GET("/feedback/stats")
-    suspend fun getFeedbackStats(): Response<APIResponse>
+    suspend fun getFeedbackStats(@Query("user_id") userId: String): Response<APIResponse>
 
     @GET("/feedback/top-cuisines")
-    suspend fun getTopCuisines(@Query("min_ratings") minRatings: Int = 1): Response<APIResponse>
+    suspend fun getTopCuisines(
+        @Query("user_id") userId: String,
+        @Query("min_ratings") minRatings: Int = 1
+    ): Response<APIResponse>
 
     @GET("/feedback/liked-ingredients")
-    suspend fun getLikedIngredients(@Query("min_likes") minLikes: Int = 2): Response<APIResponse>
+    suspend fun getLikedIngredients(
+        @Query("user_id") userId: String,
+        @Query("min_likes") minLikes: Int = 2
+    ): Response<APIResponse>
 }

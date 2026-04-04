@@ -27,121 +27,62 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    init {
-        loadProfile()
-        loadFeedbackStats()
-        loadCheapestProtein()
-    }
+    init { loadProfile(); loadFeedbackStats(); loadCheapestProtein() }
 
     fun loadProfile() {
-        _uiState.update { state -> state.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            val result = repository.getProfile(userId)
-            result.fold(
-                onSuccess = { profile ->
-                    _uiState.update { state ->
-                        state.copy(
-                            profile = profile,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            error = error.message
-                        )
-                    }
-                }
+            repository.getProfile(userId).fold(
+                onSuccess = { p -> _uiState.update { it.copy(profile = p, isLoading = false) } },
+                onFailure = { err -> _uiState.update { it.copy(isLoading = false, error = err.message) } }
             )
         }
     }
 
     fun updateProfile(profile: UserProfile) {
-        _uiState.update { state -> state.copy(isSaving = true) }
+        _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
-            val result = repository.updateProfile(userId, profile)
-            result.fold(
-                onSuccess = { updatedProfile ->
-                    _uiState.update { state ->
-                        state.copy(
-                            profile = updatedProfile,
-                            isSaving = false,
-                            successMessage = "Profile updated successfully"
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isSaving = false,
-                            error = error.message
-                        )
-                    }
-                }
+            repository.updateProfile(userId, profile).fold(
+                onSuccess = { p -> _uiState.update { it.copy(profile = p, isSaving = false, successMessage = "Profile updated!") } },
+                onFailure = { err -> _uiState.update { it.copy(isSaving = false, error = err.message) } }
             )
         }
     }
 
     fun resetProfile() {
-        _uiState.update { state -> state.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-            val result = repository.resetProfile(userId)
-            result.fold(
-                onSuccess = {
-                    _uiState.update { state ->
-                        state.copy(
-                            profile = null,
-                            isLoading = false,
-                            successMessage = "Profile reset successfully"
-                        )
-                    }
-                    loadProfile()
-                },
-                onFailure = { error ->
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            error = error.message
-                        )
-                    }
-                }
+            repository.resetProfile(userId).fold(
+                onSuccess = { _uiState.update { it.copy(profile = null, isLoading = false, successMessage = "Profile reset!") }; loadProfile() },
+                onFailure = { err -> _uiState.update { it.copy(isLoading = false, error = err.message) } }
             )
         }
     }
 
     fun loadFeedbackStats() {
         viewModelScope.launch {
-            val result = repository.getFeedbackStats()
-            result.fold(
-                onSuccess = { stats ->
-                    _uiState.update { state -> state.copy(feedbackStats = stats) }
-                },
-                onFailure = { /* Handle silently */ }
+            repository.getFeedbackStats(userId).fold(
+                onSuccess = { stats -> _uiState.update { it.copy(feedbackStats = stats) } },
+                onFailure = { /* silent */ }
             )
         }
     }
 
     fun loadCheapestProtein(dietType: String = "vegetarian") {
         viewModelScope.launch {
-            val result = repository.getCheapestProtein(dietType)
-            result.fold(
-                onSuccess = { data ->
-                    _uiState.update { state -> state.copy(cheapestProtein = data) }
-                },
-                onFailure = { /* Handle silently */ }
+            repository.getCheapestProtein(userId, dietType).fold(
+                onSuccess = { data -> _uiState.update { it.copy(cheapestProtein = data) } },
+                onFailure = { /* silent */ }
             )
         }
     }
 
-    fun clearMessages() {
-        _uiState.update { state ->
-            state.copy(
-                error = null,
-                successMessage = null
-            )
-        }
+    fun clearMessages() { _uiState.update { it.copy(error = null, successMessage = null) } }
+}
+
+class ProfileViewModelFactory(private val userId: String) : androidx.lifecycle.ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        @Suppress("UNCHECKED_CAST")
+        return ProfileViewModel(NutriBotRepository(), userId) as T
     }
 }

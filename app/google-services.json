@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "180033051695",
+    "project_id": "nutribot-6ca6f",
+    "storage_bucket": "nutribot-6ca6f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:180033051695:android:509d81e8a6d9cbf6edbada",
+        "android_client_info": {
+          "package_name": "eu.tutorials.chefproj"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQpppclRxYU4Y-ivwR0zOXETLIUh3k_jk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

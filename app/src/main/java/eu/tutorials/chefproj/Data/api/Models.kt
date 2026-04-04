@@ -144,7 +144,7 @@ data class MealPlan(
 
 // User Profile Models
 data class UserProfile(
-    @SerializedName("user_id") val userId: String,
+    @SerializedName("user_id") val userId: String?,
     @SerializedName("diet_type") val dietType: String? = null,
     @SerializedName("fitness_goal") val fitnessGoal: String? = null,
     @SerializedName("cuisine_preferences") val cuisinePreferences: List<String>? = null,
