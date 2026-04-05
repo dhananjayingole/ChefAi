@@ -1,6 +1,7 @@
 package eu.tutorials.chefproj.Data.api
 
 import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -140,6 +141,16 @@ interface ApiService {
     // ── Health ────────────────────────────────────────────────────────────────
     @POST("/health/advice")
     suspend fun getHealthAdvice(@Body request: HealthAdviceRequest): Response<APIResponse>
+
+
+    // ── Fridge Scanner ────────────────────────────────────────────────────────
+    @Multipart
+    @POST("/fridge/scan")
+    suspend fun scanFridge(
+        @Part file: MultipartBody.Part,
+        @Part("user_id") userId: RequestBody
+    ): Response<FridgeScanResponse>
+
 
     // ── Feedback ──────────────────────────────────────────────────────────────
     @GET("/feedback/stats")

@@ -242,3 +242,40 @@ data class WeeklyPlanRequest(
 data class WeeklyPlanResponse(
     val plan: String
 )
+
+// ── Fridge Scan Models ────────────────────────────────────────────────────────
+
+data class FridgeScanResult(
+    @SerializedName("total_detected") val totalDetected: Int = 0,
+    @SerializedName("allowed_items") val allowedItems: List<FridgeDetectedItem> = emptyList(),
+    @SerializedName("blocked_items") val blockedItems: List<FridgeBlockedItem> = emptyList(),
+    @SerializedName("scene_description") val sceneDescription: String = "",
+    @SerializedName("suggested_recipes") val suggestedRecipes: List<String> = emptyList(),
+    val confidence: Float = 0f,
+    val summary: String = ""
+)
+
+data class FridgeDetectedItem(
+    val name: String,
+    val quantity: Float = 1f,
+    val unit: String = "pieces",
+    val freshness: String = "good",            // fresh / good / use-soon / expiring
+    @SerializedName("expiry_risk") val expiryRisk: Float = 0f,  // 0.0 – 1.0
+    val category: String = "other"
+)
+
+data class FridgeBlockedItem(
+    val name: String,
+    val quantity: Float = 1f,
+    val unit: String = "pieces",
+    val category: String = "other",
+    @SerializedName("blocked_reason") val blockedReason: String = "",
+    @SerializedName("restriction_type") val restrictionType: String = "" // diet | health | allergy
+)
+
+// Wrapper for the full API response
+data class FridgeScanResponse(
+    val success: Boolean,
+    val data: FridgeScanResult? = null,
+    val error: String? = null
+)

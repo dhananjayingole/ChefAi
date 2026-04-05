@@ -3,6 +3,9 @@ package eu.tutorials.chefproj.Data.repository
 import eu.tutorials.chefproj.Data.api.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 
 /**
@@ -204,6 +207,29 @@ class NutriBotRepository {
             @Suppress("UNCHECKED_CAST")
             (r.body()?.data as? Map<String, Any>) ?: emptyMap()
         }
+
+//    fridgescan
+    suspend fun scanFridge(userId: String, imageBytes: ByteArray): Result<FridgeScanResult> {
+        return try {
+            val requestFile = imageBytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("file", "fridge.jpg", requestFile)
+            val userIdBody = userId.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val response = apiService.scanFridge(body, userIdBody)
+            if (response.isSuccessful) {
+                val fridgeResponse = response.body()
+                if (fridgeResponse?.success == true && fridgeResponse.data != null) {
+                    Result.success(fridgeResponse.data)
+                } else {
+                    Result.failure(Exception(fridgeResponse?.error ?: "Scan failed"))
+                }
+            } else {
+                Result.failure(Exception("Server error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     // ── Feedback ──────────────────────────────────────────────────────────────
 

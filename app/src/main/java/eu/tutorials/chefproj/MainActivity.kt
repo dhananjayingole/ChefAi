@@ -108,8 +108,11 @@ fun MainAppScreen(userId: String) {
             composable("chat") {
                 ChatScreen(userId = userId)
             }
+            composable("fridge"){
+                FridgeScanScreen(userId = userId)
+            }
             composable("pantry") {
-                PantryScreen(userId = userId)
+                PantryScreen(navController=navController,userId = userId)
             }
             composable("recipes") {
                 RecipesScreen(userId = userId)

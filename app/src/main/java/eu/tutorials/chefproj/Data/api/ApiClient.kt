@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
-    private const val BASE_URL = "https://chefaimgmproj.onrender.com"
+    private const val BASE_URL = "https://mgmhackthon-2.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY

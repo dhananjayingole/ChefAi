@@ -70,6 +70,13 @@ sealed class NavigationItem(
         label = "Profile",
         emoji = "👤"
     )
+    object Fridge : NavigationItem(
+        route = "fridge",
+        selectedIcon = Icons.Filled.Build,
+        unselectedIcon = Icons.Outlined.Build,
+        label = "Fridge",
+        emoji = "👤"
+    )
 }
 
 @Composable

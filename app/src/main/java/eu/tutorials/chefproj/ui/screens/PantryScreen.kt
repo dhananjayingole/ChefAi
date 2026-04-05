@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import eu.tutorials.chefproj.Data.api.GroceryItem
 import eu.tutorials.chefproj.ui.components.LoadingIndicator
 import eu.tutorials.chefproj.ui.theme.*
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PantryScreen(
     userId: String,
+    navController: NavController,
     viewModel: PantryViewModel = viewModel(factory = PantryViewModelFactory(userId))
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -97,6 +99,20 @@ fun PantryScreen(
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = { navController.navigate("fridge") },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Build,
+                                    contentDescription = "fridgeScan",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
                             IconButton(
                                 onClick = { viewModel.loadPantry() },
                                 modifier = Modifier
