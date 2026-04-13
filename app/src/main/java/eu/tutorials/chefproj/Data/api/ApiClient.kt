@@ -7,7 +7,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-
     private const val BASE_URL = "https://mgmhackthon-2.onrender.com/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {

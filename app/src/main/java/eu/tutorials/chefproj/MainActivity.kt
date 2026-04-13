@@ -24,7 +24,6 @@ import eu.tutorials.chefproj.ui.screens.*
 import eu.tutorials.chefproj.ui.theme.ChefProjTheme
 
 class MainActivity : ComponentActivity() {
-
     private lateinit var userManager: UserManager
 
     @RequiresApi(Build.VERSION_CODES.O)

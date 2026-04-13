@@ -5,8 +5,6 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import eu.tutorials.chefproj.Data.api.FridgeBlockedItem
-import eu.tutorials.chefproj.Data.api.FridgeDetectedItem
 import eu.tutorials.chefproj.Data.api.FridgeScanResult
 import eu.tutorials.chefproj.Data.repository.NutriBotRepository
 import kotlinx.coroutines.flow.MutableStateFlow
