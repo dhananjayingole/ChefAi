@@ -10,14 +10,6 @@
 
 ---
 
-## 📸 Screens
-
-| Chef AI (Chat) | Fridge Scanner | Pantry | Recipes | Nutrition |
-|---|---|---|---|---|
-| Talk to NutriBot, get recipes inline | Snap a photo, auto-detect & add items | Categorized inventory with quantities | AI-generated recipe with cost + macros | Calorie & macro tracking per serving |
-
----
-
 ## ✨ Features
 
 - 💬 **Chef AI chat** — a conversational interface to NutriBot; ask for recipes, log groceries in plain English ("I bought 500g paneer, 1kg tomato"), or ask nutrition/budget questions
